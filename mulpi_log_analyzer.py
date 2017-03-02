@@ -8,17 +8,7 @@ import os.path
 import time
 
 #Filters:
-from mulpi_log_analyzer_filters import AttachSlotFilter
-from mulpi_log_analyzer_filters import MacDomainSMFilter
-from mulpi_log_analyzer_filters import PromoteMacDomainFilter
-from mulpi_log_analyzer_filters import DemoteMacDomainFilter
-from mulpi_log_analyzer_filters import DetachSlotFilter
-from mulpi_log_analyzer_filters import ApplySMFilter
-from mulpi_log_analyzer_filters import RemoveSMFilter
-from mulpi_log_analyzer_filters import LightsonFilter
-from mulpi_log_analyzer_filters import LightsoffFilter
-from mulpi_log_analyzer_filters import ConfigurationFilter
-from mulpi_log_analyzer_filters import ConfigurationChangeCountFilter
+from mulpi_log_analyzer_filters import AttachSlotFilter, MacDomainSMFilter, PromoteMacDomainFilter, DemoteMacDomainFilter, DetachSlotFilter, ApplySMFilter, RemoveSMFilter, LightsonFilter, LightsoffFilter, ConfigurationFilter, ConfigurationChangeCountFilter
 
 PROMOTE_STR = '^ Promote ^'
 DEMOTE_STR = 'V Demote V'
