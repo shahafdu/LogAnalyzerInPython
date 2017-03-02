@@ -31,6 +31,7 @@ DETACH_SLOT_STR = '-- Detach Slot --'
 CONFIG_START = 'Start config ID:'
 CONFIG_END = 'End config ID:'
 
+# TODO: move this to docstring and on help print __doc__
 EXEUTION_HELP_STR = """print_sm.py
  -i <inputfile> (by default this value is /var/log/ulcmulpid.log)
  -t <test_mode [MDID-Get MD ids / SM-Get sata machines]>
@@ -45,6 +46,7 @@ DEFAULT_IN_FILE = '/no/file/in/the/arguments'
 # Colors for terminal
 
 
+# Why not use dictionary ?
 class TerminalColors(Exception):
     """    Colors for terminal    """
     HEADER = '\033[95m'
@@ -56,34 +58,41 @@ class TerminalColors(Exception):
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
 
+# Why do you inherit from Exception ?! you should inherit from object
+# This is just two parameters and no methods - why use a class ?
 class MacdomainParams(Exception):
     """    Store MD params    """
 
     def __init__(self, md_num, md_port):
+        # what is the meaning of super here ?! this class is no Exception !
         super(MacdomainParams, self).__init__()
         self.md_num = md_num
         self.md_port = md_port
 
+# This is a pseudo class - it can be a list of records, or multi list if you want to distinguish between record types.
 class LogRecord(Exception):
     """    Store one log/state record    """
 
+    # You do not need to use different names - you can do self.record = record
     def __init__(self, str_rec, type_rec, order):
+        # what is the meaning of super here ?! this class is no Exception !
         super(LogRecord, self).__init__()
-        self.rec_order = order
+        self.rec_order = order # why do you need the number of the record inside the record ?
         self.rec_str = str_rec
         # 0=state , 1=lights , 2=config , 3=Demote ,4=attach/detach, 5= Apply
         # 6=remove , 7=config start / end
         self.rec_type = type_rec
 
+        
+    # Instead of using all these single line prints - return the string you want to print and apply it to the print you would like to print out
     @staticmethod
     def print_arrow(identation_numer):
         """ print arrows in SM """
-        tab = ""
-        for _ in range(1, identation_numer):
-            tab += "\t"
+        tab = "\t" * identation_numer
         print tab + '    |   '
         print tab + '    V   '
-
+        
+    # Instead of using all these single line prints - return the string you want to print and apply it to the print you would like to print out
     def print_state(self):
         """        Print Mac domains content        """
         if self.rec_type == 0:
@@ -104,18 +113,19 @@ class LogRecord(Exception):
             print ' '
 
 
-class MacDomainRecords(Exception):
+class MacDomainRecords(object):
     """    Store log/state records for spesific MD    """
 
-    def __init__(self, _mdid):
-        super(MacDomainRecords, self).__init__()
-        self.mdid = _mdid
-        self.rec_count = 0
+    # _ in the beginning of a variable is a convension for private variables, here it is out of convension
+    def __init__(self, mdid):
+        self.mdid = mdid
+        self.rec_count = 0 # redundant - you can get len(self.records)
         self.records = []
 
     def add_rec(self, str_rec, type_rec):
         """        Add single state/log rec to the MD        """
         self.rec_count += 1
+        # why does a record need to know its numbering in the list ?
         self.records.append(LogRecord(str_rec, type_rec, self.rec_count))
 
     def keep_last_run(self):
@@ -123,22 +133,32 @@ class MacDomainRecords(Exception):
         last_idx = get_last_index(STARTUP_STR, self.records)
         self.records = self.records[last_idx:]
 
+    # what's that ? if you want to create an empty method to implement it later - use 'pass'
     def filter_list(self):
         """        place to filter log records        """
-        self.records = self.records
+        pass
+        #self.records = self.records
 
     def print_state(self):
         """        Print Mac domains content        """
-        for state in self.records:
-            state.print_state()
+        for record in self.records:
+            record.print_state()
 
 
-class MacDomainsHandler(Exception):
+class MacDomainsHandler(object):
     """    manage all the MD records    """
 
+    # always put __init__ on top for visability
+    def __init__(self, md_list):
+        self.mds = {}
+        self.md_list = md_list
+        for mdid in self.md_list:
+            if mdid not in self.mds:
+                self.mds[mdid] = MacDomainRecords(mdid)
+  
     def add_log_record(self, mdid, msg, type_rec, date):
         """         add log rec per Mdid        """
-        msg = '{} \t({})'.format(msg, date)
+        msg = '%s \t(%s)' % (msg, date)
         self.mds[mdid].add_rec(msg, type_rec)
 
     def broadcast_message(self, msg, type_rec, date):
@@ -159,20 +179,15 @@ class MacDomainsHandler(Exception):
     def print_report(self, filter_md):
         """ print records for MDs except filter_md """
         for mdid, item in self.mds.items():
-            if mdid == filter_md or filter_md == "":
+            if mdid == filter_md or not filter_md:
+                # if you print all of this in one line - it will be faster - only one print to the monitor
+                # print '\n\nMdId=%s\n-----------------%s\t\t ----- ' % (mdid, item.get_print_state())
                 print '\n'
                 print 'MdId=' + mdid
                 print '-----------------'
                 item.print_state()
-                print "\t\t" + ' ----- '
-
-    def __init__(self, _md_list):
-        super(MacDomainsHandler, self).__init__()
-        self.mds = {}
-        self.md_list = _md_list
-        for mdid in self.md_list:
-            if mdid not in self.mds:
-                self.mds[mdid] = MacDomainRecords(mdid)
+                print "\t\t ----- "
+               
 
 def filter_line(filters, line, mds):
     """ filter line """
@@ -186,6 +201,7 @@ def filter_lines(input_file_path, mds):
                RemoveSMFilter(), LightsonFilter(), LightsoffFilter(),
                ConfigurationFilter(), ConfigurationChangeCountFilter()]
 
+    # if you want this to work super fast - you need to do some research to understand how to optimze string filtering, might be that you would prefer to do it with 'grep' in subprocess
     with open(input_file_path, 'r') as log_file:
         for line in log_file:
             filter_line(filters, line, mds)
